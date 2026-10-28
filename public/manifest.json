@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "AndradeAgro - Gestão de Abastecimento & Frotas",
+  "short_name": "AndradeAgro",
+  "description": "Sistema de gestão inteligente do agronegócio para controle de abastecimentos, frotas, máquinas agrícolas, manutenções e consumo de combustível.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#031d16",
+  "background_color": "#031d16",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

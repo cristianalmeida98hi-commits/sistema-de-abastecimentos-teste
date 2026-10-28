@@ -1,24 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const LegacyApp = lazy(() => import("@/legacy/App"));
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Andrade Agro — Sistema de Abastecimento" },
+      { name: "description", content: "Controle de abastecimentos, frota, manutenções e relatórios da Andrade Agro." },
+      { property: "og:title", content: "Andrade Agro — Sistema de Abastecimento" },
+      { property: "og:description", content: "Controle de abastecimentos, frota, manutenções e relatórios." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Loading() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#031d16", color: "#FACC15" }}>
+      Carregando…
     </div>
+  );
+}
+
+function Index() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <Loading />;
+  return (
+    <Suspense fallback={<Loading />}>
+      <LegacyApp />
+    </Suspense>
   );
 }
