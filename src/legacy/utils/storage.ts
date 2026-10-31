@@ -1,8 +1,25 @@
 import { 
-  collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, writeBatch,
+  collection, doc, onSnapshot, setDoc as firestoreSetDoc, updateDoc as firestoreUpdateDoc,
+  deleteDoc as firestoreDeleteDoc, writeBatch as firestoreWriteBatch,
   query, orderBy, limit
 } from 'firebase/firestore';
 import { db, safeSetDoc, safeUpdateDoc, ensureFirebaseAuth, firebaseDisabled } from '../lib/firebase';
+
+// Isolated test mode keeps mutations in the in-memory/local cache and never calls Firestore.
+const setDoc = (...args: any[]): Promise<void> => firebaseDisabled ? Promise.resolve() : (firestoreSetDoc as any)(...args);
+const updateDoc = (...args: any[]): Promise<void> => firebaseDisabled ? Promise.resolve() : (firestoreUpdateDoc as any)(...args);
+const deleteDoc = (...args: any[]): Promise<void> => firebaseDisabled ? Promise.resolve() : (firestoreDeleteDoc as any)(...args);
+const writeBatch = (database: any): any => {
+  if (!firebaseDisabled) return firestoreWriteBatch(database);
+  const batch: any = {
+    set: () => batch,
+    update: () => batch,
+    delete: () => batch,
+    commit: () => Promise.resolve()
+  };
+  return batch;
+};
+
 import { 
   User, Vehicle, GasStation, FuelLog, MaintenanceLog, SmartAlert, AuditLog, 
   SystemSettings, MachineIssue, PreventiveMaintenanceItem, PreventiveItemKey, 
@@ -67,6 +84,7 @@ let cache = {
 };
 
 const CACHE_STORAGE_KEY = 'andradeagro_local_cache_v2';
+const ISOLATED_TEST_DATA_KEY = 'andradeagro_test_local_mode_v1';
 let isInitialized = false;
 let notifyDebounceTimer: any = null;
 let alertCheckDebounceTimer: any = null;
@@ -80,8 +98,49 @@ let firestoreLoadError: string | null = null;
 const loadedCollections = new Set<string>();
 
 // Pre-load persistent local cache to guarantee zero-latency rendering and offline protection
+function cloneTestData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 function loadInitialCacheFromStorage() {
-  if (firebaseDisabled || typeof window === 'undefined') return;
+  if (typeof window === 'undefined' && !firebaseDisabled) return;
+
+  if (firebaseDisabled) {
+    cache.users = cloneTestData(INITIAL_USERS);
+    cache.vehicles = cloneTestData(INITIAL_VEHICLES);
+    cache.gasStations = cloneTestData(INITIAL_GAS_STATIONS);
+    cache.centralTanks = cloneTestData(INITIAL_CENTRAL_TANKS);
+    cache.tankMovements = cloneTestData(INITIAL_TANK_MOVEMENTS);
+    cache.fuelLogs = cloneTestData(INITIAL_FUEL_LOGS);
+    cache.fuelRefills = cloneTestData(INITIAL_FUEL_REFILLS);
+    cache.maintenanceLogs = cloneTestData(INITIAL_MAINTENANCE_LOGS);
+    cache.machineIssues = cloneTestData(INITIAL_MACHINE_ISSUES);
+    cache.preventiveItems = cloneTestData(INITIAL_PREVENTIVE_ITEMS);
+    cache.alerts = cloneTestData(INITIAL_ALERTS);
+    cache.auditLogs = cloneTestData(INITIAL_AUDIT_LOGS);
+    cache.settings = cloneTestData(INITIAL_SETTINGS);
+    storageLoadingState = 'LOADED_WITH_DATA';
+
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (localStorage.getItem(ISOLATED_TEST_DATA_KEY) !== 'true') {
+        // Discard any cache/session left from the former production database connection.
+        localStorage.removeItem(CACHE_STORAGE_KEY);
+        localStorage.removeItem(SESSION_KEYS.REMEMBERED_EMAIL);
+        localStorage.removeItem(SESSION_KEYS.PERSISTENT_SESSION);
+        localStorage.removeItem(SESSION_KEYS.PERSISTENT_ADMIN_SESSION);
+        sessionStorage.removeItem(SESSION_KEYS.SESSION_USER);
+        localStorage.removeItem('andradeagro_remembered_user_v1');
+        localStorage.removeItem('andradeagro_remembered_user');
+        localStorage.removeItem('andradeagro_user');
+        localStorage.removeItem('andradeagro_current_user');
+        localStorage.setItem(ISOLATED_TEST_DATA_KEY, 'true');
+      }
+    } catch {
+      // If browser storage is unavailable, continue with repository seed data in memory.
+    }
+  }
   try {
     const saved = localStorage.getItem(CACHE_STORAGE_KEY);
     if (saved) {
@@ -168,7 +227,7 @@ function setupFirestoreListeners() {
   clearFirestoreListeners();
 
   if (firebaseDisabled) {
-    storageLoadingState = 'LOADED_EMPTY';
+    storageLoadingState = cache.vehicles.length > 0 || cache.users.length > 0 ? 'LOADED_WITH_DATA' : 'LOADED_EMPTY';
     firestoreLoadError = null;
     notifyDataUpdated(false);
     return;
@@ -383,7 +442,7 @@ function setupFirestoreListeners() {
 // User-invoked or automatic reconnection attempt
 export function retryFirestoreConnection() {
   if (firebaseDisabled) {
-    storageLoadingState = 'LOADED_EMPTY';
+    storageLoadingState = cache.vehicles.length > 0 || cache.users.length > 0 ? 'LOADED_WITH_DATA' : 'LOADED_EMPTY';
     firestoreLoadError = null;
     notifyDataUpdated(false);
     return;
@@ -404,7 +463,7 @@ export function initStorage() {
 
   if (firebaseDisabled) {
     isInitialized = true;
-    storageLoadingState = 'LOADED_EMPTY';
+    storageLoadingState = cache.vehicles.length > 0 || cache.users.length > 0 ? 'LOADED_WITH_DATA' : 'LOADED_EMPTY';
     firestoreLoadError = null;
     notifyDataUpdated(false);
     return;
@@ -534,8 +593,6 @@ export function clearRememberedEmail(): void {
 }
 
 export function getCurrentUser(): User | null {
-  if (firebaseDisabled) return null;
-
   try {
     if (typeof window === 'undefined') return null;
 
