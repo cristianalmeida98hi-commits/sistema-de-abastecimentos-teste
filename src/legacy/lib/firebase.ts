@@ -3,13 +3,16 @@ import { getFirestore, doc, getDocFromServer, setDoc, updateDoc, DocumentReferen
 import { getAuth, signInAnonymously, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
+export const firebaseDisabled = true;
+
+// This repository is the isolated test app. It must never use production Firebase.
 export const firebaseConfig = {
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyCKLaXPZ3xq5M2CCRVBkwRHS-7dQoBelEY",
-  authDomain: "andrade-agro.firebaseapp.com",
-  projectId: "andrade-agro",
-  storageBucket: "andrade-agro.firebasestorage.app",
-  messagingSenderId: "271695349839",
-  appId: "1:271695349839:web:4428ed928e6423b9adc23a"
+  apiKey: "test-disabled",
+  authDomain: "localhost",
+  projectId: "andrade-agro-test-disabled",
+  storageBucket: "andrade-agro-test-disabled.local",
+  messagingSenderId: "0",
+  appId: "1:0:web:test-disabled"
 };
 
 export const app = initializeApp(firebaseConfig);
@@ -29,16 +32,18 @@ function logTechnicalDiagnostics() {
   console.groupEnd();
 }
 
-logTechnicalDiagnostics();
-
-// Listen to auth state changes to keep diagnostics updated
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log(`[Firebase Auth] Sessão ativa: UID=${user.uid}`);
-  } else {
-    console.log("[Firebase Auth] Nenhuma sessão ativa no momento");
-  }
-});
+if (!firebaseDisabled) {
+  logTechnicalDiagnostics();
+  
+  // Listen to auth state changes to keep diagnostics updated
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log(`[Firebase Auth] Sessão ativa: UID=${user.uid}`);
+    } else {
+      console.log("[Firebase Auth] Nenhuma sessão ativa no momento");
+    }
+  });
+}
 
 let pendingAuthPromise: Promise<FirebaseUser | null> | null = null;
 
@@ -47,6 +52,7 @@ let pendingAuthPromise: Promise<FirebaseUser | null> | null = null;
  * Attempts anonymous sign-in if no currentUser exists, avoiding duplicate in-flight requests.
  */
 export async function ensureFirebaseAuth(): Promise<FirebaseUser | null> {
+  if (firebaseDisabled) return null;
   if (auth.currentUser) {
     return auth.currentUser;
   }
@@ -96,10 +102,12 @@ export function sanitizeForFirestore<T>(obj: T): T {
 }
 
 export function safeSetDoc(docRef: DocumentReference, data: any) {
+  if (firebaseDisabled) return Promise.resolve();
   return setDoc(docRef, sanitizeForFirestore(data));
 }
 
 export function safeUpdateDoc(docRef: DocumentReference, data: any) {
+  if (firebaseDisabled) return Promise.resolve();
   return updateDoc(docRef, sanitizeForFirestore(data));
 }
 
