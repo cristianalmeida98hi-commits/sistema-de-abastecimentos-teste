@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 
-const LegacyApp = lazy(() => import("@/legacy/App"));
+const PrototypeApp = lazy(() => import("@/prototype/AndradePrototype"));
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,7 +31,7 @@ function Index() {
   if (!mounted) return <Loading />;
   return (
     <Suspense fallback={<Loading />}>
-      <LegacyApp />
+      <PrototypeApp />
     </Suspense>
   );
 }
