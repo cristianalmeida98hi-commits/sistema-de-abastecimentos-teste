@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 
-const PrototypeApp = lazy(() => import("@/prototype/AndradePrototype"));
+const PrototypeApp = lazy(() => import("@/prototype/original-inspired/AndradePrototypeOriginalInspired"));
 
 export const Route = createFileRoute("/")({
   head: () => ({
