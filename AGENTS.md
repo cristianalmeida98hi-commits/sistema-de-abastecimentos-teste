@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - The imported Andrade Agro app lives in src/legacy and renders client-only from src/routes/index.tsx; it still uses its original Firebase project for data, so keep Firebase-dependent code out of SSR.
+- Keep strict TypeScript enabled with legacy-compatible optional-property, indexed-access, override and return checks; the imported source predates these additional checks, and compatibility changes must not alter its business logic.
+- Use Recharts content-prop types for custom tooltip and legend content because Recharts 3 supplies payload through content props, not the outer controls.
