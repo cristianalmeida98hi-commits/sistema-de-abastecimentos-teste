@@ -2,7 +2,7 @@ import {
   collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, writeBatch,
   query, orderBy, limit
 } from 'firebase/firestore';
-import { db, safeSetDoc, safeUpdateDoc, ensureFirebaseAuth } from '../lib/firebase';
+import { db, safeSetDoc, safeUpdateDoc, ensureFirebaseAuth, firebaseDisabled } from '../lib/firebase';
 import { 
   User, Vehicle, GasStation, FuelLog, MaintenanceLog, SmartAlert, AuditLog, 
   SystemSettings, MachineIssue, PreventiveMaintenanceItem, PreventiveItemKey, 
@@ -81,7 +81,7 @@ const loadedCollections = new Set<string>();
 
 // Pre-load persistent local cache to guarantee zero-latency rendering and offline protection
 function loadInitialCacheFromStorage() {
-  if (typeof window === 'undefined') return;
+  if (firebaseDisabled || typeof window === 'undefined') return;
   try {
     const saved = localStorage.getItem(CACHE_STORAGE_KEY);
     if (saved) {
@@ -166,6 +166,13 @@ export function clearFirestoreListeners() {
 function setupFirestoreListeners() {
   // Prevent duplicate listeners
   clearFirestoreListeners();
+
+  if (firebaseDisabled) {
+    storageLoadingState = 'LOADED_EMPTY';
+    firestoreLoadError = null;
+    notifyDataUpdated(false);
+    return;
+  }
 
   try {
     // 1. Users Subscription
@@ -375,6 +382,13 @@ function setupFirestoreListeners() {
 
 // User-invoked or automatic reconnection attempt
 export function retryFirestoreConnection() {
+  if (firebaseDisabled) {
+    storageLoadingState = 'LOADED_EMPTY';
+    firestoreLoadError = null;
+    notifyDataUpdated(false);
+    return;
+  }
+
   firestoreLoadError = null;
   if (cache.vehicles.length === 0 && cache.users.length === 0) {
     storageLoadingState = 'LOADING';
@@ -387,6 +401,14 @@ export function retryFirestoreConnection() {
 // Initialize Firebase Firestore Real-Time Listeners
 export function initStorage() {
   if (isInitialized && typeof window !== 'undefined') return;
+
+  if (firebaseDisabled) {
+    isInitialized = true;
+    storageLoadingState = 'LOADED_EMPTY';
+    firestoreLoadError = null;
+    notifyDataUpdated(false);
+    return;
+  }
   isInitialized = true;
 
   // Purge any legacy auth keys from previous versions to avoid auto-login glitches
@@ -512,6 +534,8 @@ export function clearRememberedEmail(): void {
 }
 
 export function getCurrentUser(): User | null {
+  if (firebaseDisabled) return null;
+
   try {
     if (typeof window === 'undefined') return null;
 
