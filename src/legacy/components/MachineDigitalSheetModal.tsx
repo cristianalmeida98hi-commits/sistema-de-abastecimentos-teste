@@ -392,7 +392,7 @@ const MachineDigitalSheetInner: React.FC<MachineDigitalSheetInnerProps> = ({
             : alt.title,
           desc: alt.description,
           type: isOilType ? (isOilOverdue ? 'RED' : 'YELLOW') : (alt.severity === 'ALTA' ? 'RED' : 'YELLOW'),
-          isOilAlert: isOilType
+          isOilAlert: Boolean(isOilType)
         });
       });
     }

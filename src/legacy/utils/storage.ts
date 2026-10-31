@@ -2251,7 +2251,7 @@ export async function recordOilChange(
       intervalHours: !isKm ? interval : undefined,
       notes: notes || oilPrevItem.notes
     });
-    cache.preventiveItems = cache.preventiveItems.map(p => p.id === oilPrevItem.id ? updatedItem : p);
+    cache.preventiveItems = cache.preventiveItems.map(p => p.id === oilPrevItem.id ? updatedItem as PreventiveMaintenanceItem : p);
     await setDoc(doc(db, 'preventive_items', oilPrevItem.id), updatedItem);
   }
 

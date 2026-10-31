@@ -348,7 +348,7 @@ async function getOrRenewSubscription(
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: targetKeyBytes
+      applicationServerKey: new Uint8Array(targetKeyBytes)
     });
   }
 
