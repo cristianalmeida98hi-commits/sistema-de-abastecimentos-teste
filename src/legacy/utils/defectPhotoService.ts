@@ -1,5 +1,5 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage, ensureFirebaseAuth } from '../lib/firebase';
+import { storage, ensureFirebaseAuth, firebaseDisabled } from '../lib/firebase';
 
 export interface ProcessedPhoto {
   id: string;
@@ -174,6 +174,7 @@ export async function uploadDefectPhotos(
   issueId: string,
   photos: ProcessedPhoto[]
 ): Promise<UploadedPhotoResult> {
+  if (firebaseDisabled) throw new Error('O envio de fotos está desativado no modo de teste.');
   if (!photos || photos.length === 0) {
     return { photoUrls: [], photoStoragePaths: [], failedCount: 0 };
   }
@@ -250,7 +251,7 @@ export async function uploadDefectPhotos(
  * Exclui fotos do Cloudinary e mantém suporte aos caminhos/URLs antigos do Firebase Storage.
  */
 export async function deleteDefectPhotos(storagePathsOrUrls: string[]): Promise<void> {
-  if (!storagePathsOrUrls || storagePathsOrUrls.length === 0) return;
+  if (firebaseDisabled || !storagePathsOrUrls || storagePathsOrUrls.length === 0) return;
 
   const cloudinaryIds = storagePathsOrUrls.filter(item => {
     if (typeof item !== 'string') return false;

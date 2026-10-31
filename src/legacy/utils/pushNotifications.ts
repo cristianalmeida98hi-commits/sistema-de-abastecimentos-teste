@@ -1,6 +1,12 @@
 import { User, UserRole, PushNotificationPayload } from '../types';
-import { db, ensureFirebaseAuth } from '../lib/firebase';
-import { doc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { db, ensureFirebaseAuth, firebaseDisabled } from '../lib/firebase';
+import { doc, setDoc as firestoreSetDoc, updateDoc as firestoreUpdateDoc, collection, getDocs as firestoreGetDocs } from 'firebase/firestore';
+
+const setDoc = (...args: any[]): Promise<void> => firebaseDisabled ? Promise.resolve() : (firestoreSetDoc as any)(...args);
+const updateDoc = (...args: any[]): Promise<void> => firebaseDisabled ? Promise.resolve() : (firestoreUpdateDoc as any)(...args);
+const getDocs = (...args: any[]): Promise<any> => firebaseDisabled
+  ? Promise.resolve({ docs: [], empty: true, size: 0, forEach: () => {} })
+  : (firestoreGetDocs as any)(...args);
 
 /**
  * Chave pública VAPID oficial do sistema AndradeAgro (RFC 8292).
@@ -87,6 +93,10 @@ export async function safeApiFetch<T = any>(
 ): Promise<SafeApiResponse<T>> {
   const url = resolveApiUrl(endpoint);
   const method = options?.method || 'GET';
+
+  if (firebaseDisabled) {
+    return { ok: false, status: 0, error: 'Conexões externas estão desativadas no modo de teste.', url, method };
+  }
 
   console.log(`[AndradeAgro API] Requisição: ${method} ${url}`);
 
@@ -348,7 +358,7 @@ async function getOrRenewSubscription(
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: targetKeyBytes
+      applicationServerKey: new Uint8Array(targetKeyBytes)
     });
   }
 
