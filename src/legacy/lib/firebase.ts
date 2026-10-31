@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, type User as FirebaseUs
 import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyCKLaXPZ3xq5M2CCRVBkwRHS-7dQoBelEY",
+  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyCKLaXPZ3xq5M2CCRVBkwRHS-7dQoBelEY",
   authDomain: "andrade-agro.firebaseapp.com",
   projectId: "andrade-agro",
   storageBucket: "andrade-agro.firebasestorage.app",

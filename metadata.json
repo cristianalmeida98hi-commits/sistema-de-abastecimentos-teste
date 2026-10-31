@@ -1,0 +1,6 @@
+{
+  "name": "Andrade Agro — Sistema de Abastecimento",
+  "description": "Controle de abastecimentos, frota, manutenções e relatórios da Andrade Agro.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
